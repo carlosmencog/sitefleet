@@ -30,6 +30,7 @@ export function buildApp({ registrationToken, store = new InMemoryAgentStore(), 
     catch { done(new Error('Invalid JSON')); }
   });
 
+  app.get('/', async () => ({ service: 'SiteFleet API', status: 'ok', health: '/health' }));
   app.get('/health', async () => ({ status: 'ok' }));
 
   app.post('/v1/agent/register', async (request, reply) => {

@@ -18,6 +18,15 @@ docker compose up --build
 
 En desarrollo, el token de registro predeterminado es `local-registration-token`. Cambiarlo antes de instalar el plugin fuera de local.
 
+## Conectar WordPress local
+
+1. Copia `wordpress-plugin/sitefleet-agent.php` a una carpeta llamada `sitefleet-agent` dentro de `wp-content/plugins/` de una instalación WordPress local y actívalo.
+2. Abre **Herramientas → SiteFleet Agent** dentro de WordPress.
+3. Usa `local-registration-token` como token de registro.
+4. Para una instalación WordPress que corre directamente en tu equipo, usa `http://localhost:3001` como URL de API. Si WordPress corre en Docker, usa `http://host.docker.internal:3001` para que el contenedor llegue a la API expuesta por el equipo.
+
+La respuesta de la ruta raíz (`http://localhost:3001`) solo confirma que la API está disponible; el dashboard todavía es el siguiente hito.
+
 ## Verificar
 
 ```bash
