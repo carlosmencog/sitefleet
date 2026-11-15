@@ -74,7 +74,7 @@ final class SiteFleet_Agent {
         $plugins = array(); foreach ( get_plugins() as $file => $plugin ) { $plugins[] = array( 'slug' => $file, 'version' => $plugin['Version'], 'updateAvailable' => isset( $updates->response[ $file ] ) ); }
         $themes = array(); foreach ( wp_get_themes() as $slug => $theme ) { $themes[] = array( 'slug' => $slug, 'version' => $theme->get( 'Version' ), 'updateAvailable' => false ); }
         $payload = array( 'wordpressVersion' => get_bloginfo( 'version' ), 'phpVersion' => PHP_VERSION, 'plugins' => $plugins, 'themes' => $themes, 'collectedAt' => gmdate( 'c' ) );
-        $raw = wp_json_encode( $payload ); $timestamp = (string) time();
+        $raw = wp_json_encode( $payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ); $timestamp = (string) time();
         $signature = hash_hmac( 'sha256', "POST\n/v1/agent/inventory\n{$timestamp}\n{$raw}", $credentials['secret'] );
         wp_remote_post( $settings['api_url'] . '/v1/agent/inventory', array( 'timeout' => 20, 'headers' => array( 'Content-Type' => 'application/json', 'X-SiteFleet-Agent-Id' => $credentials['agent_id'], 'X-SiteFleet-Timestamp' => $timestamp, 'X-SiteFleet-Signature' => $signature, 'Idempotency-Key' => wp_generate_uuid4() ), 'body' => $raw ) );
     }

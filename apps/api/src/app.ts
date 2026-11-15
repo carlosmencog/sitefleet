@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import Fastify from 'fastify';
 import { z } from 'zod';
-import { AgentRepository } from './repository.js';
+import { InMemoryAgentStore, type AgentStore } from './repository.js';
 
 const registerSchema = z.object({ siteUrl: z.string().url(), registrationToken: z.string().min(16) });
 const inventorySchema = z.object({
@@ -12,7 +12,7 @@ const inventorySchema = z.object({
   collectedAt: z.string().datetime(),
 });
 
-type AppOptions = { registrationToken: string; repository?: AgentRepository };
+type AppOptions = { registrationToken: string; store?: AgentStore };
 
 function equalSignature(expected: string, received: string) {
   const expectedBuffer = Buffer.from(expected, 'hex');
@@ -20,8 +20,14 @@ function equalSignature(expected: string, received: string) {
   return expectedBuffer.length === receivedBuffer.length && timingSafeEqual(expectedBuffer, receivedBuffer);
 }
 
-export function buildApp({ registrationToken, repository = new AgentRepository() }: AppOptions) {
+export function buildApp({ registrationToken, store = new InMemoryAgentStore() }: AppOptions) {
   const app = Fastify({ logger: true, bodyLimit: 256 * 1024 });
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (request, body, done) => {
+    const raw = typeof body === 'string' ? body : body.toString('utf8');
+    request.rawBody = raw;
+    try { done(null, JSON.parse(raw)); }
+    catch { done(new Error('Invalid JSON')); }
+  });
 
   app.get('/health', async () => ({ status: 'ok' }));
 
@@ -31,7 +37,7 @@ export function buildApp({ registrationToken, repository = new AgentRepository()
     if (!equalSignature(createHmac('sha256', registrationToken).update(parsed.data.registrationToken).digest('hex'), createHmac('sha256', registrationToken).update(registrationToken).digest('hex'))) {
       return reply.code(401).send({ error: 'Invalid registration token' });
     }
-    const agent = repository.create(parsed.data.siteUrl);
+    const agent = await store.create(parsed.data.siteUrl);
     return reply.code(201).send({ agentId: agent.id, siteId: agent.siteId, agentSecret: agent.secret });
   });
 
@@ -47,15 +53,16 @@ export function buildApp({ registrationToken, repository = new AgentRepository()
     if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > 5 * 60 * 1000) {
       return reply.code(401).send({ error: 'Expired or invalid timestamp' });
     }
-    const agent = repository.find(agentId);
+    const agent = await store.find(agentId);
     if (!agent) return reply.code(401).send({ error: 'Unknown agent' });
-    const rawBody = JSON.stringify(request.body);
-    const signedPayload = `POST\n/v1/agent/inventory\n${timestamp}\n${rawBody}`;
-    const expected = createHmac('sha256', agent.secret).update(signedPayload).digest('hex');
-    if (!equalSignature(expected, signature)) return reply.code(401).send({ error: 'Invalid request signature' });
+    const rawPayload = `POST\n/v1/agent/inventory\n${timestamp}\n${request.rawBody ?? ''}`;
+    const canonicalPayload = `POST\n/v1/agent/inventory\n${timestamp}\n${JSON.stringify(request.body)}`;
+    const rawSignature = createHmac('sha256', agent.secret).update(rawPayload).digest('hex');
+    const canonicalSignature = createHmac('sha256', agent.secret).update(canonicalPayload).digest('hex');
+    if (!equalSignature(rawSignature, signature) && !equalSignature(canonicalSignature, signature)) return reply.code(401).send({ error: 'Invalid request signature' });
     const parsed = inventorySchema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send({ error: 'Invalid inventory payload' });
-    const created = repository.saveInventory(agent, idempotencyKey, parsed.data);
+    const created = await store.saveInventory(agent.id, idempotencyKey, parsed.data);
     return reply.code(created ? 202 : 200).send({ accepted: true, duplicate: !created });
   });
 

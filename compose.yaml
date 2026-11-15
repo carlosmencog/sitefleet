@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sitefleet
+      POSTGRES_USER: sitefleet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?copy .env.example to .env and change this value}
+    ports:
+      - "5432:5432"
+    volumes:
+      - sitefleet-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sitefleet -d sitefleet"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgres://sitefleet:${POSTGRES_PASSWORD}@postgres:5432/sitefleet
+      SITEFLEET_REGISTRATION_TOKEN: ${SITEFLEET_REGISTRATION_TOKEN:?set a registration token in .env}
+      SITEFLEET_ENCRYPTION_KEY: ${SITEFLEET_ENCRYPTION_KEY:?set a 32-byte base64 key in .env}
+    ports:
+      - "3001:3001"
+    command: sh -c "npm run db:migrate --workspace=@sitefleet/api && node apps/api/dist/src/server.js"
+volumes:
+  sitefleet-postgres:
