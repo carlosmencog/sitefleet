@@ -33,8 +33,18 @@ final class SiteFleet_Agent {
     public static function page() {
         if ( ! current_user_can( 'manage_options' ) ) { return; }
         $connected = get_option( self::OPTION );
+        $notice = sanitize_key( wp_unslash( $_GET['sitefleet_notice'] ?? '' ) );
         ?>
         <div class="wrap"><h1>SiteFleet Agent</h1>
+        <?php if ( 'connected' === $notice ) : ?>
+            <div class="notice notice-success is-dismissible"><p><strong>SiteFleet conectado.</strong> El primer inventario se envió para evaluación.</p></div>
+        <?php elseif ( 'invalid' === $notice ) : ?>
+            <div class="notice notice-error is-dismissible"><p><strong>No se pudo conectar.</strong> Revisa que la URL de la API sea válida y que el token tenga al menos 16 caracteres.</p></div>
+        <?php elseif ( 'failed' === $notice ) : ?>
+            <div class="notice notice-error is-dismissible"><p><strong>No se pudo conectar con SiteFleet.</strong> Revisa la URL de la API, el token y que el servicio esté activo.</p></div>
+        <?php elseif ( 'unexpected' === $notice ) : ?>
+            <div class="notice notice-error is-dismissible"><p><strong>SiteFleet respondió con datos inesperados.</strong> Revisa los registros de la API.</p></div>
+        <?php endif; ?>
         <?php if ( $connected ) : ?>
             <p><strong>Connected.</strong> Site ID: <?php echo esc_html( $connected['site_id'] ); ?></p>
             <p>The inventory is sent twice daily. Secrets are not displayed.</p>
@@ -55,15 +65,29 @@ final class SiteFleet_Agent {
         check_admin_referer( 'sitefleet_agent_connect' );
         $api_url = esc_url_raw( untrailingslashit( wp_unslash( $_POST['api_url'] ?? '' ) ) );
         $token = sanitize_text_field( wp_unslash( $_POST['registration_token'] ?? '' ) );
-        if ( ! wp_http_validate_url( $api_url ) || strlen( $token ) < 16 ) { wp_safe_redirect( admin_url( 'tools.php?page=sitefleet-agent' ) ); exit; }
+        if ( ! self::valid_api_url( $api_url ) || strlen( $token ) < 16 ) { self::redirect( 'invalid' ); }
         $response = wp_remote_post( $api_url . '/v1/agent/register', array( 'timeout' => 15, 'headers' => array( 'Content-Type' => 'application/json' ), 'body' => wp_json_encode( array( 'siteUrl' => home_url(), 'registrationToken' => $token ) ) ) );
-        if ( is_wp_error( $response ) || 201 !== wp_remote_retrieve_response_code( $response ) ) { wp_die( 'Could not connect SiteFleet. Check the API URL and registration token.' ); }
+        if ( is_wp_error( $response ) || 201 !== wp_remote_retrieve_response_code( $response ) ) {
+            error_log( '[SiteFleet Agent] Registration failed: ' . ( is_wp_error( $response ) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code( $response ) ) );
+            self::redirect( 'failed' );
+        }
         $body = json_decode( wp_remote_retrieve_body( $response ), true );
-        if ( empty( $body['agentId'] ) || empty( $body['agentSecret'] ) || empty( $body['siteId'] ) ) { wp_die( 'Unexpected registration response.' ); }
+        if ( empty( $body['agentId'] ) || empty( $body['agentSecret'] ) || empty( $body['siteId'] ) ) { self::redirect( 'unexpected' ); }
         update_option( self::OPTION, array( 'agent_id' => sanitize_text_field( $body['agentId'] ), 'site_id' => sanitize_text_field( $body['siteId'] ), 'secret' => sanitize_text_field( $body['agentSecret'] ) ), false );
         update_option( self::SETTINGS, array( 'api_url' => $api_url ), false );
         self::send_inventory();
-        wp_safe_redirect( admin_url( 'tools.php?page=sitefleet-agent' ) ); exit;
+        self::redirect( 'connected' );
+    }
+
+    private static function redirect( $notice ) {
+        wp_safe_redirect( add_query_arg( 'sitefleet_notice', $notice, admin_url( 'tools.php?page=sitefleet-agent' ) ) );
+        exit;
+    }
+
+    private static function valid_api_url( $url ) {
+        $host = wp_parse_url( $url, PHP_URL_HOST );
+        if ( in_array( $host, array( 'localhost', '127.0.0.1', 'host.docker.internal' ), true ) ) { return true; }
+        return (bool) wp_http_validate_url( $url );
     }
 
     public static function send_inventory() {

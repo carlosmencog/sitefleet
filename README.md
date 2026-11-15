@@ -27,6 +27,8 @@ En desarrollo, el token de registro predeterminado es `local-registration-token`
 
 La respuesta de la ruta raíz (`http://localhost:3001`) solo confirma que la API está disponible; el dashboard todavía es el siguiente hito.
 
+Si el registro falla, el panel ahora muestra un aviso explícito. En WordPress nativo usa `http://localhost:3001`; si WordPress usa Docker, `localhost` apunta al propio contenedor y debes usar `http://host.docker.internal:3001`.
+
 ## Verificar
 
 ```bash
