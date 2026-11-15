@@ -50,5 +50,17 @@ services:
       DATABASE_URL: postgres://sitefleet:${POSTGRES_PASSWORD}@postgres:5432/sitefleet
       REDIS_URL: redis://redis:6379
     command: node apps/api/dist/src/worker.js
+  dashboard:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://sitefleet:${POSTGRES_PASSWORD}@postgres:5432/sitefleet
+      DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:?set a dashboard username in .env}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:?set a dashboard password in .env}
+    ports:
+      - "3000:3000"
+    command: npm run start --workspace=@sitefleet/dashboard
 volumes:
   sitefleet-postgres:

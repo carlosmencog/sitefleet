@@ -8,7 +8,9 @@
   ],
   "scripts": {
     "dev:api": "npm run dev --workspace=@sitefleet/api",
+    "dev:dashboard": "npm run dev --workspace=@sitefleet/dashboard",
     "build": "npm run build --workspace=@sitefleet/api",
+    "build:dashboard": "npm run build --workspace=@sitefleet/dashboard",
     "test": "npm run test --workspace=@sitefleet/api",
     "typecheck": "npm run typecheck --workspace=@sitefleet/api"
   },
