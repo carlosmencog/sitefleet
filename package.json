@@ -1,0 +1,18 @@
+{
+  "name": "sitefleet",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Website fleet intelligence for WordPress agencies",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@sitefleet/api",
+    "build": "npm run build --workspace=@sitefleet/api",
+    "test": "npm run test --workspace=@sitefleet/api",
+    "typecheck": "npm run typecheck --workspace=@sitefleet/api"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}
