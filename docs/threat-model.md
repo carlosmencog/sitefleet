@@ -8,3 +8,4 @@
 | Alteración del payload | Firma sobre método, ruta, timestamp y cuerpo bruto | — |
 | Fuga de secretos | El plugin no los muestra tras registro; `.env` ignorado; AES-256-GCM en base de datos | KMS/secret manager |
 | Abuso del endpoint | Límite de tamaño del cuerpo | Rate limit por agente/IP |
+| Fallo al evaluar alertas | Cola con reintentos, alertas idempotentes y re-encolado al reintentar el mismo evento | Patrón outbox para tolerar caída sin reintento del agente |

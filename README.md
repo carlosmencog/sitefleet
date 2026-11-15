@@ -6,7 +6,7 @@ SiteFleet centraliza inventario y salud técnica de instalaciones WordPress para
 
 El plugin `wordpress-plugin/sitefleet-agent.php` registra una instalación mediante un token de un solo uso. La API devuelve una credencial del agente una sola vez. Los inventarios posteriores se firman con HMAC SHA-256, incluyen marca de tiempo y una clave de idempotencia.
 
-La API persiste agentes e inventarios en PostgreSQL. Los secretos de agentes se cifran con AES-256-GCM; la clave de cifrado se entrega por variable de entorno y nunca se guarda en la base de datos. Redis, alertas y el dashboard quedan para los siguientes hitos.
+La API persiste agentes e inventarios en PostgreSQL. Los secretos de agentes se cifran con AES-256-GCM; la clave de cifrado se entrega por variable de entorno y nunca se guarda en la base de datos. Redis desacopla la recepción del inventario de la evaluación de alertas, que realiza un worker con reintentos.
 
 ## Ejecutar la API
 

@@ -6,12 +6,12 @@ export type Agent = { id: string; siteId: string; siteUrl: string; secret: strin
 export interface AgentStore {
   create(siteUrl: string): Promise<Agent>;
   find(id: string): Promise<Agent | undefined>;
-  saveInventory(agentId: string, idempotencyKey: string, inventory: unknown): Promise<boolean>;
+  saveInventory(agentId: string, idempotencyKey: string, inventory: unknown): Promise<{ created: boolean; eventId?: number }>;
 }
 
 export class InMemoryAgentStore implements AgentStore {
   private readonly agents = new Map<string, Agent>();
-  private readonly processedKeys = new Set<string>();
+  private readonly processedKeys = new Map<string, number>();
 
   async create(siteUrl: string) {
     const agent = { id: randomUUID(), siteId: randomUUID(), siteUrl, secret: randomBytes(32).toString('base64url') };
@@ -23,9 +23,11 @@ export class InMemoryAgentStore implements AgentStore {
 
   async saveInventory(agentId: string, idempotencyKey: string, _inventory: unknown) {
     const key = `${agentId}:${idempotencyKey}`;
-    if (this.processedKeys.has(key)) return false;
-    this.processedKeys.add(key);
-    return true;
+    const existing = this.processedKeys.get(key);
+    if (existing) return { created: false, eventId: existing };
+    const eventId = this.processedKeys.size + 1;
+    this.processedKeys.set(key, eventId);
+    return { created: true, eventId };
   }
 }
 
@@ -69,7 +71,7 @@ export class PostgresAgentStore implements AgentStore {
   }
 
   async saveInventory(agentId: string, idempotencyKey: string, inventory: unknown) {
-    const result = await this.pool.query("INSERT INTO inventory_events (agent_id, idempotency_key, payload, collected_at) VALUES ($1, $2, $3::jsonb, ($3::jsonb ->> 'collectedAt')::timestamptz) ON CONFLICT (agent_id, idempotency_key) DO NOTHING", [agentId, idempotencyKey, JSON.stringify(inventory)]);
-    return result.rowCount === 1;
+    const result = await this.pool.query("INSERT INTO inventory_events (agent_id, idempotency_key, payload, collected_at) VALUES ($1, $2, $3::jsonb, ($3::jsonb ->> 'collectedAt')::timestamptz) ON CONFLICT (agent_id, idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key RETURNING id, (xmax = 0) AS created", [agentId, idempotencyKey, JSON.stringify(inventory)]);
+    return { created: result.rows[0].created, eventId: result.rows[0].id };
   }
 }

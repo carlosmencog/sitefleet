@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import Fastify from 'fastify';
 import { z } from 'zod';
 import { InMemoryAgentStore, type AgentStore } from './repository.js';
+import { NoopAlertQueue, type AlertQueue } from './alert-queue.js';
 
 const registerSchema = z.object({ siteUrl: z.string().url(), registrationToken: z.string().min(16) });
 const inventorySchema = z.object({
@@ -12,7 +13,7 @@ const inventorySchema = z.object({
   collectedAt: z.string().datetime(),
 });
 
-type AppOptions = { registrationToken: string; store?: AgentStore };
+type AppOptions = { registrationToken: string; store?: AgentStore; alertQueue?: AlertQueue };
 
 function equalSignature(expected: string, received: string) {
   const expectedBuffer = Buffer.from(expected, 'hex');
@@ -20,7 +21,7 @@ function equalSignature(expected: string, received: string) {
   return expectedBuffer.length === receivedBuffer.length && timingSafeEqual(expectedBuffer, receivedBuffer);
 }
 
-export function buildApp({ registrationToken, store = new InMemoryAgentStore() }: AppOptions) {
+export function buildApp({ registrationToken, store = new InMemoryAgentStore(), alertQueue = new NoopAlertQueue() }: AppOptions) {
   const app = Fastify({ logger: true, bodyLimit: 256 * 1024 });
   app.addContentTypeParser('application/json', { parseAs: 'string' }, (request, body, done) => {
     const raw = typeof body === 'string' ? body : body.toString('utf8');
@@ -62,8 +63,9 @@ export function buildApp({ registrationToken, store = new InMemoryAgentStore() }
     if (!equalSignature(rawSignature, signature) && !equalSignature(canonicalSignature, signature)) return reply.code(401).send({ error: 'Invalid request signature' });
     const parsed = inventorySchema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send({ error: 'Invalid inventory payload' });
-    const created = await store.saveInventory(agent.id, idempotencyKey, parsed.data);
-    return reply.code(created ? 202 : 200).send({ accepted: true, duplicate: !created });
+    const saved = await store.saveInventory(agent.id, idempotencyKey, parsed.data);
+    if (saved.eventId !== undefined) await alertQueue.enqueue({ eventId: saved.eventId, agentId: agent.id, inventory: parsed.data });
+    return reply.code(saved.created ? 202 : 200).send({ accepted: true, duplicate: !saved.created });
   });
 
   return app;

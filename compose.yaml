@@ -14,18 +14,41 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
   api:
     build: .
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment:
       PORT: 3001
       DATABASE_URL: postgres://sitefleet:${POSTGRES_PASSWORD}@postgres:5432/sitefleet
       SITEFLEET_REGISTRATION_TOKEN: ${SITEFLEET_REGISTRATION_TOKEN:?set a registration token in .env}
       SITEFLEET_ENCRYPTION_KEY: ${SITEFLEET_ENCRYPTION_KEY:?set a 32-byte base64 key in .env}
+      REDIS_URL: redis://redis:6379
     ports:
       - "3001:3001"
     command: sh -c "npm run db:migrate --workspace=@sitefleet/api && node apps/api/dist/src/server.js"
+  worker:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://sitefleet:${POSTGRES_PASSWORD}@postgres:5432/sitefleet
+      REDIS_URL: redis://redis:6379
+    command: node apps/api/dist/src/worker.js
 volumes:
   sitefleet-postgres:
