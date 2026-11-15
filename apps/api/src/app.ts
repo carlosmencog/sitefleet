@@ -10,7 +10,7 @@ const inventorySchema = z.object({
   phpVersion: z.string().min(1),
   plugins: z.array(z.object({ slug: z.string().min(1), version: z.string().min(1), updateAvailable: z.boolean() })),
   themes: z.array(z.object({ slug: z.string().min(1), version: z.string().min(1), updateAvailable: z.boolean() })),
-  collectedAt: z.string().datetime(),
+  collectedAt: z.string().datetime({ offset: true }),
 });
 
 type AppOptions = { registrationToken: string; store?: AgentStore; alertQueue?: AlertQueue };
