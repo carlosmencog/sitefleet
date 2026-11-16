@@ -22,7 +22,7 @@
 | Primary | `#272757` | `--ink` |
 | Secondary | `#505081` | `--violet` |
 | Accent / CTA | `#FFA896` | `--coral` |
-| Background | `#272757` | `--canvas` |
+| Background | `#EEE8FF` | `--canvas` |
 | Card | `#FFFFFF` | `--surface` |
 | Muted Surface | `#F5F4FF` | `--mist` |
 | Border | `#E3E2F1` | `--line` |
