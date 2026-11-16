@@ -6,7 +6,7 @@ import { getSiteDetail } from '../../../lib/data';
 export const dynamic = 'force-dynamic';
 
 function formatDate(value: Date | null) {
-  if (!value) return 'No inventory';
+  if (!value) return 'No inventory received';
   return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(value);
 }
 
@@ -23,13 +23,17 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ age
   const status = site.critical_count ? 'Critical' : site.alert_count ? 'Needs review' : 'Healthy';
   const tone = site.critical_count ? 'critical' : site.alert_count ? 'warning' : 'healthy';
   const wordpressAdminUrl = `${site.site_url.replace(/\/$/, '')}/wp-admin/`;
+
   return <main className="app-shell">
-    <aside className="sidebar"><div className="brand"><span aria-hidden="true">SF</span><div><strong>SiteFleet</strong><small>Fleet operations</small></div></div><nav aria-label="Primary navigation"><Link className="nav-item" href="/" style={{ textDecoration: 'none' }}>Overview</Link><span className="nav-item active">Sites</span><span className="nav-item">Alerts</span><span className="nav-item muted">Integrations coming soon</span></nav><p className="sidebar-note">Every status comes from the latest inventory received. No simulated metrics.</p></aside>
-    <div className="content"><div className="detail-shell">
-    <Link className="back-link" href="/">← Back to fleet</Link>
-    <header className="detail-header"><div><p className="eyebrow">SITE DETAIL</p><h1>{site.site_url.replace(/^https?:\/\//, '')}</h1><p className="lead">Last inventory received {formatDate(site.last_inventory_at)}.</p></div><div><a className="nav-item active" href={wordpressAdminUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>Go to WordPress</a><span className={`pill ${tone}`} style={{ marginLeft: '10px' }}>{status}</span></div></header>
-    <section className="detail-grid" aria-label="Site technical status"><article className="detail-card"><span>WordPress</span><strong>{site.inventory?.wordpressVersion ?? '—'}</strong></article><article className="detail-card"><span>PHP</span><strong>{site.inventory?.phpVersion ?? '—'}</strong></article><article className="detail-card"><span>Open alerts</span><strong>{site.alert_count}</strong></article><article className="detail-card"><span>Plugin updates</span><strong className={pendingPlugins.length ? 'warning-text' : ''}>{pendingPlugins.length}</strong></article></section>
-    <section className="detail-panel"><div className="panel-heading"><div><p className="eyebrow">PLUGINS</p><h2>Pending updates</h2></div><span className="subtle">From the latest inventory</span></div>{pendingPlugins.length ? <div className="plugin-list">{pendingPlugins.map((plugin) => <div className="plugin-row" key={plugin.slug}><div><strong>{plugin.slug}</strong><span>Installed version {plugin.version}</span></div><span className="pill warning">Update available</span></div>)}</div> : <p className="empty">All installed plugins are up to date.</p>}</section>
-    <section className="detail-panel"><div className="panel-heading"><div><p className="eyebrow">ALERTS</p><h2>Open findings</h2></div></div>{alerts.length ? <div className="plugin-list">{alerts.map((alert, index) => <div className="plugin-row" key={`${alert.type}-${index}`}><div><strong>{alertTitle(alert.type)}</strong><span>{Object.entries(alert.details).map(([key, value]) => `${key}: ${value}`).join(' · ')} · Last seen {formatDate(alert.last_seen_at)}</span></div><span className={`pill ${alert.severity}`}>{alert.severity === 'critical' ? 'Critical' : 'Warning'}</span></div>)}</div> : <p className="empty">No open alerts.</p>}</section>
-    </div></div></main>;
+    <aside className="sidebar"><Link className="brand" href="/" aria-label="SiteFleet overview"><span aria-hidden="true">S</span><strong>SiteFleet</strong></Link><nav className="sidebar-nav" aria-label="Primary navigation"><Link className="nav-item" href="/">Overview</Link><span className="nav-item active">Sites</span><span className="nav-item is-disabled">Alerts</span></nav><div className="sidebar-footer"><span className="status-indicator" aria-hidden="true" />Inventory-led monitoring</div></aside>
+    <div className="workspace detail-workspace">
+      <Link className="back-link" href="/">Back to overview</Link>
+      <header className="detail-header"><div><p className="eyebrow">SITE INVENTORY</p><h1>{site.site_url.replace(/^https?:\/\//, '')}</h1><p className="lead">Last received {formatDate(site.last_inventory_at)}.</p></div><div className="header-actions"><span className={`health-badge ${tone}`}>{status}</span><a className="primary-button" href={wordpressAdminUrl} target="_blank" rel="noreferrer">Go to WordPress</a></div></header>
+
+      <section className="detail-grid" aria-label="Current site status"><article className="detail-card"><span>WordPress</span><strong>{site.inventory?.wordpressVersion ?? '—'}</strong></article><article className="detail-card"><span>PHP</span><strong>{site.inventory?.phpVersion ?? '—'}</strong></article><article className="detail-card"><span>Open findings</span><strong>{site.alert_count}</strong></article><article className="detail-card"><span>Plugin updates</span><strong className={pendingPlugins.length ? 'warning-text' : ''}>{pendingPlugins.length || 'None'}</strong></article></section>
+
+      <section className="detail-panel" aria-labelledby="plugins-heading"><div className="section-heading"><div><p className="eyebrow">PLUGINS</p><h2 id="plugins-heading">Pending updates</h2></div><span className="subtle">Reported by this site</span></div>{pendingPlugins.length ? <div className="data-list">{pendingPlugins.map((plugin) => <div className="data-row" key={plugin.slug}><div><strong>{plugin.slug}</strong><span>Installed version {plugin.version}</span></div><span className="health-badge warning">Update available</span></div>)}</div> : <p className="empty">All installed plugins are up to date.</p>}</section>
+      <section className="detail-panel" aria-labelledby="alerts-heading"><div className="section-heading"><div><p className="eyebrow">ATTENTION</p><h2 id="alerts-heading">Open findings</h2></div></div>{alerts.length ? <div className="data-list">{alerts.map((alert, index) => <div className="data-row" key={`${alert.type}-${index}`}><div><strong>{alertTitle(alert.type)}</strong><span>{Object.entries(alert.details).map(([key, value]) => `${key}: ${value}`).join(' · ')} · Last seen {formatDate(alert.last_seen_at)}</span></div><span className={`health-badge ${alert.severity}`}>{alert.severity}</span></div>)}</div> : <p className="empty">No open findings for this site.</p>}</section>
+    </div>
+  </main>;
 }
