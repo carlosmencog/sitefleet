@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { Icon } from './ui-icon';
+import { SiteFleetMark } from './sitefleet-mark';
 
 type Section = 'overview' | 'sites' | 'alerts';
 
 export function Sidebar({ active }: { active: Section }) {
   return <aside className="sidebar">
-    <Link className="brand" href="/" aria-label="SiteFleet overview"><span className="brand-mark" aria-hidden="true"><Icon name="pulse" size={19} /></span><strong>SiteFleet</strong></Link>
+    <Link className="brand" href="/" aria-label="SiteFleet overview"><span className="brand-mark" aria-hidden="true"><SiteFleetMark size={32} /></span><strong>SiteFleet</strong></Link>
     <nav className="sidebar-nav" aria-label="Primary navigation">
       <Link className={`nav-item ${active === 'overview' ? 'active' : ''}`} href="/"><Icon name="grid" />Overview</Link>
       <Link className={`nav-item ${active === 'sites' ? 'active' : ''}`} href="/sites"><Icon name="globe" />Sites</Link>
