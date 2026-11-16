@@ -32,13 +32,13 @@
 
 ### Typography
 
-- **Single Font:** Inter (with system fallbacks)
-- **Weights:** 600 for hierarchy, 700–800 for page titles and numeric emphasis, 500–600 for labels and body copy
+- **Single Font:** DM Sans (with system fallbacks)
+- **Weights:** 400 for body copy, 500 for labels and supporting text, 700 for hierarchy, page titles, and numeric emphasis. Never exceed 700.
 - **Mood:** vibrant, focused, operational, optimistic
 
 **CSS Import:**
 ```css
-font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 ```
 
 ### Spacing Variables
