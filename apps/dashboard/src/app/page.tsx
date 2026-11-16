@@ -10,10 +10,6 @@ function formatDate(value: Date | null) {
   return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(value);
 }
 
-function titleFor(type: string) {
-  return ({ php_outdated: 'Outdated PHP', wordpress_outdated: 'Outdated WordPress', plugin_update_available: 'Plugin update available' } as Record<string, string>)[type] ?? type;
-}
-
 function healthFor(lastInventoryAt: Date | null, criticalCount: number, alertCount: number) {
   if (!lastInventoryAt) return { label: 'No report', tone: 'stale' };
   const ageHours = (Date.now() - lastInventoryAt.getTime()) / 3_600_000;
@@ -57,10 +53,6 @@ export default async function Dashboard() {
             <div className="site-card-footer"><span>{site.alert_count ? `${site.alert_count} open finding${site.alert_count === 1 ? '' : 's'}` : 'No open findings'}</span><span className="card-action">View site <Icon name="arrow" size={15} /></span></div>
           </Link>;
         }) : <p className="empty">No sites connected yet.</p>}</div>
-      </section>
-
-      <section className="findings" aria-labelledby="findings-heading"><div className="section-heading"><div><p className="eyebrow">ATTENTION</p><h2 id="findings-heading">Open findings</h2></div><span className="subtle">Always based on the most recent inventory</span></div>
-        <div className="findings-list">{alerts.length ? alerts.map((alert, index) => <article className="finding" key={`${alert.site_url}-${alert.type}-${index}`}><span className={`finding-marker ${alert.severity}`} aria-hidden="true"><Icon name="alert" size={15} /></span><div className="finding-copy"><h3>{titleFor(alert.type)}</h3><p>{alert.site_url.replace(/^https?:\/\//, '')}</p><small>{Object.entries(alert.details).map(([key, value]) => `${key}: ${value}`).join(' · ')} · Last seen {formatDate(alert.last_seen_at)}</small></div><span className={`health-badge ${alert.severity}`}>{alert.severity}</span></article>) : <p className="empty">No open findings. Your fleet is clear.</p>}</div>
       </section>
     </div>
   </main>;
