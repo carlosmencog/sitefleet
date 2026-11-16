@@ -4,7 +4,7 @@ SiteFleet centraliza inventario y salud técnica de instalaciones WordPress para
 
 ## Primer vertical slice
 
-El plugin `wordpress-plugin/sitefleet-agent.php` registra una instalación mediante un token de un solo uso. La API devuelve una credencial del agente una sola vez. Los inventarios posteriores se firman con HMAC SHA-256, incluyen marca de tiempo y una clave de idempotencia.
+El plugin `wordpress-plugin/sitefleet-agent.php` registra una instalación mediante un token de enrolamiento de un solo uso. La API guarda únicamente el hash del token y devuelve una credencial del agente una sola vez. Los inventarios posteriores se firman con HMAC SHA-256, incluyen marca de tiempo y una clave de idempotencia.
 
 La API persiste agentes e inventarios en PostgreSQL. Los secretos de agentes se cifran con AES-256-GCM; la clave de cifrado se entrega por variable de entorno y nunca se guarda en la base de datos. Redis desacopla la recepción del inventario de la evaluación de alertas, que realiza un worker con reintentos.
 
@@ -16,13 +16,13 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-En desarrollo, el token de registro predeterminado es `local-registration-token`. Cambiarlo antes de instalar el plugin fuera de local.
+Para generar un token de enrolamiento local o productivo, usa `npm run registration-token --workspace=@sitefleet/api -- --expires-hours=72` después de aplicar migraciones. El token se muestra una sola vez.
 
 ## Conectar WordPress local
 
 1. Copia `wordpress-plugin/sitefleet-agent.php` a una carpeta llamada `sitefleet-agent` dentro de `wp-content/plugins/` de una instalación WordPress local y actívalo.
 2. Abre **Herramientas → SiteFleet Agent** dentro de WordPress.
-3. Usa `local-registration-token` como token de registro.
+3. Genera un token de enrolamiento con el comando anterior y úsalo una sola vez.
 4. Para una instalación WordPress que corre directamente en tu equipo, usa `http://localhost:3001` como URL de API. Si WordPress corre en Docker, usa `http://host.docker.internal:3001` para que el contenedor llegue a la API expuesta por el equipo.
 
 Después de actualizar WordPress, PHP o plugins, el administrador verá **Update SiteFleet** en la barra superior de WordPress. Ese botón envía un inventario nuevo a SiteFleet y confirma el resultado en la pantalla actual. No instala actualizaciones ni inicia sesión automáticamente en ningún sitio.
@@ -59,3 +59,7 @@ La API verifica primero el cuerpo recibido y, para interoperar con serializadore
 
 1. Enviar inventarios a una cola Redis y evaluar alertas en un worker.
 2. Crear dashboard con autenticación por organización.
+
+## Producción
+
+Consulta [la guía de onboarding productivo](docs/production-onboarding.md) antes de conectar un sitio público. El agente 0.3.0 exige HTTPS fuera de los entornos WordPress `local` y `development`.

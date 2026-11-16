@@ -11,6 +11,8 @@ test('registers an agent and accepts a signed inventory only once', async () => 
   const registration = await app.inject({ method: 'POST', url: '/v1/agent/register', payload: { siteUrl: 'https://example.test', registrationToken: token } });
   assert.equal(registration.statusCode, 201);
   const credentials = registration.json() as { agentId: string; agentSecret: string };
+  const repeatedRegistration = await app.inject({ method: 'POST', url: '/v1/agent/register', payload: { siteUrl: 'https://second.example.test', registrationToken: token } });
+  assert.equal(repeatedRegistration.statusCode, 401);
   const timestamp = String(Math.floor(Date.now() / 1000));
   const raw = JSON.stringify(inventory);
   const signature = createHmac('sha256', credentials.agentSecret).update(`POST\n/v1/agent/inventory\n${timestamp}\n${raw}`).digest('hex');

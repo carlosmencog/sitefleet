@@ -3,6 +3,7 @@ import Fastify from 'fastify';
 import { z } from 'zod';
 import { InMemoryAgentStore, type AgentStore } from './repository.js';
 import { NoopAlertQueue, type AlertQueue } from './alert-queue.js';
+import { InMemoryRegistrationTokenStore, type RegistrationTokenStore } from './registration-token-store.js';
 
 const registerSchema = z.object({ siteUrl: z.string().url(), registrationToken: z.string().min(16) });
 const inventorySchema = z.object({
@@ -13,7 +14,7 @@ const inventorySchema = z.object({
   collectedAt: z.string().datetime({ offset: true }),
 });
 
-type AppOptions = { registrationToken: string; store?: AgentStore; alertQueue?: AlertQueue };
+type AppOptions = { registrationToken?: string; registrationTokenStore?: RegistrationTokenStore; store?: AgentStore; alertQueue?: AlertQueue };
 
 function equalSignature(expected: string, received: string) {
   const expectedBuffer = Buffer.from(expected, 'hex');
@@ -21,7 +22,7 @@ function equalSignature(expected: string, received: string) {
   return expectedBuffer.length === receivedBuffer.length && timingSafeEqual(expectedBuffer, receivedBuffer);
 }
 
-export function buildApp({ registrationToken, store = new InMemoryAgentStore(), alertQueue = new NoopAlertQueue() }: AppOptions) {
+export function buildApp({ registrationToken, registrationTokenStore = new InMemoryRegistrationTokenStore(registrationToken ? [registrationToken] : []), store = new InMemoryAgentStore(), alertQueue = new NoopAlertQueue() }: AppOptions) {
   const app = Fastify({ logger: true, bodyLimit: 256 * 1024 });
   app.addContentTypeParser('application/json', { parseAs: 'string' }, (request, body, done) => {
     const raw = typeof body === 'string' ? body : body.toString('utf8');
@@ -36,10 +37,15 @@ export function buildApp({ registrationToken, store = new InMemoryAgentStore(), 
   app.post('/v1/agent/register', async (request, reply) => {
     const parsed = registerSchema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send({ error: 'Invalid registration request' });
-    if (!equalSignature(createHmac('sha256', registrationToken).update(parsed.data.registrationToken).digest('hex'), createHmac('sha256', registrationToken).update(registrationToken).digest('hex'))) {
+    if (!(await registrationTokenStore.consume(parsed.data.registrationToken))) {
       return reply.code(401).send({ error: 'Invalid registration token' });
     }
-    const agent = await store.create(parsed.data.siteUrl);
+    let agent;
+    try { agent = await store.create(parsed.data.siteUrl); }
+    catch (error) {
+      if ((error as { code?: string }).code === '23505') return reply.code(409).send({ error: 'This site is already connected' });
+      throw error;
+    }
     return reply.code(201).send({ agentId: agent.id, siteId: agent.siteId, agentSecret: agent.secret });
   });
 

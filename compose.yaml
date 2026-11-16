@@ -33,7 +33,6 @@ services:
     environment:
       PORT: 3001
       DATABASE_URL: postgres://sitefleet:${POSTGRES_PASSWORD}@postgres:5432/sitefleet
-      SITEFLEET_REGISTRATION_TOKEN: ${SITEFLEET_REGISTRATION_TOKEN:?set a registration token in .env}
       SITEFLEET_ENCRYPTION_KEY: ${SITEFLEET_ENCRYPTION_KEY:?set a 32-byte base64 key in .env}
       REDIS_URL: redis://redis:6379
     ports:
