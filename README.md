@@ -25,6 +25,8 @@ En desarrollo, el token de registro predeterminado es `local-registration-token`
 3. Usa `local-registration-token` como token de registro.
 4. Para una instalación WordPress que corre directamente en tu equipo, usa `http://localhost:3001` como URL de API. Si WordPress corre en Docker, usa `http://host.docker.internal:3001` para que el contenedor llegue a la API expuesta por el equipo.
 
+Después de actualizar WordPress, PHP o plugins, el administrador verá **Update SiteFleet** en la barra superior de WordPress. Ese botón envía un inventario nuevo a SiteFleet y confirma el resultado en la pantalla actual. No instala actualizaciones ni inicia sesión automáticamente en ningún sitio.
+
 La respuesta de la ruta raíz (`http://localhost:3001`) solo confirma que la API está disponible; el dashboard todavía es el siguiente hito.
 
 ## Dashboard local

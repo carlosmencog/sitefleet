@@ -16,6 +16,8 @@ final class SiteFleet_Agent {
 
     public static function init() {
         add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
+        add_action( 'admin_bar_menu', array( __CLASS__, 'admin_bar' ), 100 );
+        add_action( 'admin_notices', array( __CLASS__, 'admin_notices' ) );
         add_action( 'admin_post_sitefleet_agent_connect', array( __CLASS__, 'connect' ) );
         add_action( 'admin_post_sitefleet_agent_send_inventory', array( __CLASS__, 'send_inventory_now' ) );
         add_action( self::CRON_HOOK, array( __CLASS__, 'send_inventory' ) );
@@ -31,34 +33,48 @@ final class SiteFleet_Agent {
 
     public static function menu() { add_management_page( 'SiteFleet Agent', 'SiteFleet Agent', 'manage_options', 'sitefleet-agent', array( __CLASS__, 'page' ) ); }
 
+    public static function admin_bar( $admin_bar ) {
+        if ( ! current_user_can( 'manage_options' ) || ! get_option( self::OPTION ) ) { return; }
+        $current_url = admin_url();
+        if ( isset( $_SERVER['REQUEST_URI'] ) ) {
+            $current_url = wp_validate_redirect( home_url( wp_unslash( $_SERVER['REQUEST_URI'] ) ), admin_url() );
+        }
+        $admin_bar->add_node( array(
+            'id' => 'sitefleet-update',
+            'title' => 'Update SiteFleet',
+            'href' => add_query_arg( array( 'action' => 'sitefleet_agent_send_inventory', '_wpnonce' => wp_create_nonce( 'sitefleet_agent_send_inventory' ), 'redirect_to' => $current_url ), admin_url( 'admin-post.php' ) ),
+            'meta' => array( 'title' => 'Send a fresh inventory to SiteFleet' ),
+        ) );
+    }
+
+    public static function admin_notices() {
+        $notice = sanitize_key( wp_unslash( $_GET['sitefleet_notice'] ?? '' ) );
+        $messages = array(
+            'connected' => array( 'success', 'SiteFleet connected. The first inventory was sent for evaluation.' ),
+            'connected_inventory_failed' => array( 'warning', 'SiteFleet connected, but the first inventory was not accepted. Try Update SiteFleet after checking the API.' ),
+            'inventory_sent' => array( 'success', 'Inventory sent. SiteFleet is evaluating the current site state.' ),
+            'inventory_failed' => array( 'error', 'The inventory could not be sent. Check the SiteFleet logs and try again.' ),
+            'invalid' => array( 'error', 'Could not connect. Check the API URL and registration token.' ),
+            'failed' => array( 'error', 'Could not connect to SiteFleet. Check the API URL, token, and service status.' ),
+            'unexpected' => array( 'error', 'SiteFleet returned unexpected data. Check the API logs.' ),
+        );
+        if ( ! isset( $messages[ $notice ] ) ) { return; }
+        list( $type, $message ) = $messages[ $notice ];
+        printf( '<div class="notice notice-%1$s is-dismissible"><p><strong>%2$s</strong></p></div>', esc_attr( $type ), esc_html( $message ) );
+    }
+
     public static function page() {
         if ( ! current_user_can( 'manage_options' ) ) { return; }
         $connected = get_option( self::OPTION );
-        $notice = sanitize_key( wp_unslash( $_GET['sitefleet_notice'] ?? '' ) );
         ?>
         <div class="wrap"><h1>SiteFleet Agent</h1>
-        <?php if ( 'connected' === $notice ) : ?>
-            <div class="notice notice-success is-dismissible"><p><strong>SiteFleet conectado.</strong> El primer inventario se envió para evaluación.</p></div>
-        <?php elseif ( 'connected_inventory_failed' === $notice ) : ?>
-            <div class="notice notice-warning is-dismissible"><p><strong>SiteFleet se conectó, pero el primer inventario no fue aceptado.</strong> Usa “Enviar inventario ahora” después de actualizar la API.</p></div>
-        <?php elseif ( 'inventory_sent' === $notice ) : ?>
-            <div class="notice notice-success is-dismissible"><p><strong>Inventario enviado.</strong> SiteFleet lo está evaluando.</p></div>
-        <?php elseif ( 'inventory_failed' === $notice ) : ?>
-            <div class="notice notice-error is-dismissible"><p><strong>No se pudo enviar el inventario.</strong> Revisa los registros de SiteFleet.</p></div>
-        <?php elseif ( 'invalid' === $notice ) : ?>
-            <div class="notice notice-error is-dismissible"><p><strong>No se pudo conectar.</strong> Revisa que la URL de la API sea válida y que el token tenga al menos 16 caracteres.</p></div>
-        <?php elseif ( 'failed' === $notice ) : ?>
-            <div class="notice notice-error is-dismissible"><p><strong>No se pudo conectar con SiteFleet.</strong> Revisa la URL de la API, el token y que el servicio esté activo.</p></div>
-        <?php elseif ( 'unexpected' === $notice ) : ?>
-            <div class="notice notice-error is-dismissible"><p><strong>SiteFleet respondió con datos inesperados.</strong> Revisa los registros de la API.</p></div>
-        <?php endif; ?>
         <?php if ( $connected ) : ?>
             <p><strong>Connected.</strong> Site ID: <?php echo esc_html( $connected['site_id'] ); ?></p>
             <p>The inventory is sent twice daily. Secrets are not displayed.</p>
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                 <?php wp_nonce_field( 'sitefleet_agent_send_inventory' ); ?>
                 <input type="hidden" name="action" value="sitefleet_agent_send_inventory" />
-                <?php submit_button( 'Enviar inventario ahora', 'secondary', 'submit', false ); ?>
+                <?php submit_button( 'Update SiteFleet', 'secondary', 'submit', false ); ?>
             </form>
         <?php else : ?>
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -93,11 +109,13 @@ final class SiteFleet_Agent {
     public static function send_inventory_now() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Unauthorized', 403 ); }
         check_admin_referer( 'sitefleet_agent_send_inventory' );
-        self::redirect( self::send_inventory() ? 'inventory_sent' : 'inventory_failed' );
+        $redirect_to = wp_validate_redirect( wp_unslash( $_REQUEST['redirect_to'] ?? '' ), admin_url( 'tools.php?page=sitefleet-agent' ) );
+        self::redirect( self::send_inventory() ? 'inventory_sent' : 'inventory_failed', $redirect_to );
     }
 
-    private static function redirect( $notice ) {
-        wp_safe_redirect( add_query_arg( 'sitefleet_notice', $notice, admin_url( 'tools.php?page=sitefleet-agent' ) ) );
+    private static function redirect( $notice, $destination = '' ) {
+        $destination = $destination ? $destination : admin_url( 'tools.php?page=sitefleet-agent' );
+        wp_safe_redirect( add_query_arg( 'sitefleet_notice', $notice, $destination ) );
         exit;
     }
 
