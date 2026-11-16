@@ -19,35 +19,26 @@
 
 | Role | Hex | CSS Variable |
 |------|-----|--------------|
-| Primary | `#2563EB` | `--color-primary` |
-| On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#3B82F6` | `--color-secondary` |
-| On Secondary | `#000000` | `--color-on-secondary` |
-| Accent/CTA | `#EA580C` | `--color-accent` |
-| On Accent/CTA | `#000000` | `--color-on-accent` |
-| Background | `#F8FAFC` | `--color-background` |
-| Foreground | `#1E293B` | `--color-foreground` |
-| Card | `#FFFFFF` | `--color-card` |
-| Card Foreground | `#1E293B` | `--color-card-foreground` |
-| Muted | `#E9EFF8` | `--color-muted` |
-| Muted Foreground | `#475569` | `--color-muted-foreground` |
-| Border | `#E2E8F0` | `--color-border` |
-| Destructive | `#DC2626` | `--color-destructive` |
-| On Destructive | `#FFFFFF` | `--color-on-destructive` |
-| Ring | `#2563EB` | `--color-ring` |
+| Primary | `#272757` | `--ink` |
+| Secondary | `#505081` | `--violet` |
+| Accent / CTA | `#FFA896` | `--coral` |
+| Background | `#272757` | `--canvas` |
+| Card | `#FFFFFF` | `--surface` |
+| Muted Surface | `#F5F4FF` | `--mist` |
+| Border | `#E3E2F1` | `--line` |
+| Muted Text | `#686884` | `--muted` |
 
-**Color Notes:** Trust blue + orange CTA contrast [Accent adjusted from #F97316]
+**Color Notes:** Use the three brand colors as a hierarchy: indigo for the application frame, violet for structure and active elements, and coral for the most important actions and contrast. Pale tints are derived surfaces, not new brand colors.
 
 ### Typography
 
-- **Heading Font:** Calistoga
-- **Body Font:** Inter
-- **Mood:** saas, boutique, electric, warm, editorial, bold, premium, fintech, business, dual font, human warmth
-- **Google Fonts:** [Calistoga + Inter](https://fonts.googleapis.com/css2?family=Calistoga:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap)
+- **Single Font:** Inter (with system fallbacks)
+- **Weights:** 600 for hierarchy, 700–800 for page titles and numeric emphasis, 500–600 for labels and body copy
+- **Mood:** vibrant, focused, operational, optimistic
 
 **CSS Import:**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Calistoga:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 ```
 
 ### Spacing Variables
@@ -167,9 +158,9 @@
 
 ## Style Guidelines
 
-**Style:** Minimalism & Swiss Style
+**Style:** Vibrant operational dashboard
 
-**Keywords:** Clean, simple, spacious, functional, white space, high contrast, geometric, sans-serif, grid-based, essential
+**Keywords:** Crisp, expressive, compact, high contrast, rounded modules, single-weight system, consistent SVG line icons
 
 **Best For:** Enterprise apps, dashboards, documentation sites, SaaS platforms, professional tools
 
@@ -204,7 +195,7 @@ gsap.from(el, { opacity: 0, y: 12, duration: 0.35, ease: 'power1.out', scrollTri
 ## Anti-Patterns (Do NOT Use)
 
 - ❌ Excessive animation
-- ❌ Dark mode by default
+- ❌ Decorative gradients that obscure the hierarchy
 
 ### Additional Forbidden Patterns
 
