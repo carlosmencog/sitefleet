@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getSiteDetail } from '../../../lib/data';
 import { Icon } from '../../components/ui-icon';
+import { Sidebar } from '../../components/sidebar';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ age
   const wordpressAdminUrl = `${site.site_url.replace(/\/$/, '')}/wp-admin/`;
 
   return <main className="app-shell">
-    <aside className="sidebar"><Link className="brand" href="/" aria-label="SiteFleet overview"><span className="brand-mark" aria-hidden="true"><Icon name="pulse" size={19} /></span><strong>SiteFleet</strong></Link><nav className="sidebar-nav" aria-label="Primary navigation"><Link className="nav-item" href="/"><Icon name="grid" />Overview</Link><span className="nav-item active"><Icon name="globe" />Sites</span><span className="nav-item is-disabled"><Icon name="alert" />Alerts</span></nav><div className="sidebar-footer"><span className="status-indicator" aria-hidden="true" />Fleet is reporting</div></aside>
+    <Sidebar active="sites" />
     <div className="workspace detail-workspace">
       <Link href="/" style={{ alignItems: 'center', color: 'var(--violet)', display: 'inline-flex', fontSize: '14px', fontWeight: 800, gap: '6px', marginBottom: 'var(--space-6)', textDecoration: 'none' }}><Icon name="arrow-left" size={16} />Back to overview</Link>
       <header className="detail-header"><div><p className="eyebrow">SITE INVENTORY</p><h1>{site.site_url.replace(/^https?:\/\//, '')}</h1><p className="lead">Last received {formatDate(site.last_inventory_at)}.</p></div><div className="header-actions"><span className={`health-badge ${tone}`}>{status}</span><a className="primary-button" href={wordpressAdminUrl} target="_blank" rel="noreferrer">Go to WordPress <Icon name="arrow" size={16} /></a></div></header>

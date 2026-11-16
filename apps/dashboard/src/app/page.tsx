@@ -2,6 +2,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import Link from 'next/link';
 import { getFleet } from '../lib/data';
 import { Icon } from './components/ui-icon';
+import { Sidebar } from './components/sidebar';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,11 +27,7 @@ export default async function Dashboard() {
   const healthy = sites.filter((site) => healthFor(site.last_inventory_at, site.critical_count, site.alert_count).tone === 'healthy').length;
 
   return <main className="app-shell">
-    <aside className="sidebar">
-      <Link className="brand" href="/" aria-label="SiteFleet overview"><span className="brand-mark" aria-hidden="true"><Icon name="pulse" size={19} /></span><strong>SiteFleet</strong></Link>
-      <nav className="sidebar-nav" aria-label="Primary navigation"><Link className="nav-item active" href="/"><Icon name="grid" />Overview</Link><span className="nav-item is-disabled"><Icon name="globe" />Sites</span><span className="nav-item is-disabled"><Icon name="alert" />Alerts</span></nav>
-      <div className="sidebar-footer"><span className="status-indicator" aria-hidden="true" />Fleet is reporting</div>
-    </aside>
+    <Sidebar active="overview" />
     <div className="workspace">
       <header className="page-header">
         <div><p className="eyebrow">OPERATIONS OVERVIEW</p><h1>Command your WordPress fleet.</h1><p className="lead">Live signals, clear priorities, and a single place to keep every site in view.</p></div>
