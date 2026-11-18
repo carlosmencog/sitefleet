@@ -35,9 +35,9 @@ export default async function Dashboard() {
       </header>
 
       <section className="metrics" aria-label="Fleet summary">
-        <article className="metric-card primary"><span className="metric-icon"><Icon name="globe" /></span><div><span>Connected sites</span><strong>{sites.length}</strong><small>Reporting to this workspace</small></div></article>
-        <article className="metric-card secondary"><span className="metric-icon"><Icon name="layers" /></span><div><span>Open findings</span><strong>{alerts.length}</strong><small>From the latest inventory</small></div></article>
-        <article className={`metric-card accent ${critical ? 'is-critical' : ''}`}><span className="metric-icon"><Icon name={critical ? 'alert' : 'shield'} /></span><div><span>{critical ? 'Critical' : 'Healthy sites'}</span><strong>{critical || healthy}</strong><small>{critical ? 'Prioritize these first' : 'Nothing critical reported'}</small></div></article>
+        <article className="metric-card secondary"><span className="metric-icon"><Icon name="globe" /></span><div><span>Connected sites</span><strong>{sites.length}</strong><small>Reporting to this workspace</small></div></article>
+        <article className="metric-card accent"><span className="metric-icon"><Icon name="layers" /></span><div><span>Open findings</span><strong>{alerts.length}</strong><small>From the latest inventory</small></div></article>
+        <article className={`metric-card primary ${critical ? 'is-critical' : ''}`}><span className="metric-icon"><Icon name={critical ? 'alert' : 'shield'} /></span><div><span>{critical ? 'Critical' : 'Healthy sites'}</span><strong>{critical || healthy}</strong><small>{critical ? 'Prioritize these first' : 'Nothing critical reported'}</small></div></article>
       </section>
 
       <section className="fleet-section" aria-labelledby="fleet-heading">
