@@ -35,15 +35,17 @@ export async function runLighthouse(targetUrl: string, strategy: PerformanceStra
     chromeFlags: ['--headless=new', '--no-sandbox', '--disable-dev-shm-usage', ...(resolverRules ? [`--host-resolver-rules=${resolverRules}`] : [])],
   });
   try {
+    const desktopConfig = strategy === 'desktop' ? (await import('lighthouse/core/config/desktop-config.js')).default : undefined;
     const result = await lighthouse(targetUrl, {
       port: chrome.port,
       output: 'json',
       onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
-      formFactor: strategy,
-      screenEmulation: strategy === 'desktop' ? { mobile: false, width: 1350, height: 940, deviceScaleFactor: 1, disabled: false } : undefined,
-    });
+      ...(strategy === 'mobile' ? { formFactor: 'mobile' as const } : {}),
+    }, desktopConfig);
     if (!result?.lhr) throw new Error('Lighthouse did not return a report.');
-    return normalizeLighthouse(result.lhr as LighthouseReport, strategy);
+    const normalized = normalizeLighthouse(result.lhr as LighthouseReport, strategy);
+    if (normalized.scores.performance === null) throw new Error(`Lighthouse returned an incomplete ${strategy} report.`);
+    return normalized;
   } finally {
     await chrome.kill();
   }

@@ -30,7 +30,7 @@ function AuditCard({ audit }: { audit: Audit }) {
     <div className="score-grid" aria-label={`${audit.strategy} audit scores`}>{scoreItems.map(([label, score]) => <div key={label}><span>{label}</span><strong className={scoreTone(score)}>{score ?? '—'}</strong></div>)}</div>
     <dl className="vitals-grid"><div><dt>LCP</dt><dd>{formatMilliseconds(audit.metrics.lcpMs)}</dd></div><div><dt>CLS</dt><dd>{formatCls(audit.metrics.cls)}</dd></div><div><dt>INP</dt><dd>{formatMilliseconds(audit.metrics.inpMs)}</dd></div><div><dt>FCP</dt><dd>{formatMilliseconds(audit.metrics.fcpMs)}</dd></div></dl>
     <p className="audit-timestamp">Audited {formatDate(audit.fetchedAt)}</p>
-    {audit.opportunities.length ? <div className="opportunity-list"><p>Top opportunities</p>{audit.opportunities.map((opportunity) => <div key={opportunity.id}><span>{opportunity.title}</span><small>{opportunity.displayValue ?? (opportunity.savingsMs ? `Potential saving ${Math.round(opportunity.savingsMs)} ms` : 'Review opportunity')}</small></div>)}</div> : <p className="audit-empty">No high-impact opportunities reported.</p>}
+    {audit.opportunities.length ? <div className="opportunity-list"><p>Top opportunities</p>{audit.opportunities.map((opportunity) => <div key={opportunity.id}><span>{opportunity.title}</span><small>{opportunity.displayValue ?? (opportunity.savingsMs ? `Potential saving ${Math.round(opportunity.savingsMs)} ms` : 'Review opportunity')}</small></div>)}</div> : <p className="audit-empty">{audit.scores.performance === 100 ? 'Perfect 100 performance score — no high-impact opportunities reported.' : 'No high-impact opportunities reported.'}</p>}
   </article>;
 }
 
