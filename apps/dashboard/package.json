@@ -8,6 +8,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "chrome-launcher": "^1.1.2",
+    "lighthouse": "^12.8.2",
     "next": "^16.4.6",
     "pg": "^8.14.1",
     "react": "^19.1.1",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from './ui-icon';
 
@@ -34,39 +34,26 @@ function AuditCard({ audit }: { audit: Audit }) {
   </article>;
 }
 
-export function PerformancePanel({ agentId, targetUrl, audits }: { agentId: string; targetUrl: string | null; audits: Audit[] }) {
+export function PerformancePanel({ agentId, siteUrl, audits }: { agentId: string; siteUrl: string; audits: Audit[] }) {
   const router = useRouter();
-  const [url, setUrl] = useState(targetUrl ?? '');
-  const [saving, setSaving] = useState(false);
   const [auditing, setAuditing] = useState(false);
   const [feedback, setFeedback] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
-
-  async function saveTarget(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setSaving(true); setFeedback(null);
-    try {
-      const response = await fetch(`/api/sites/${agentId}/performance-target`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUrl: url }) });
-      const body = await response.json() as { error?: string; targetUrl?: string };
-      if (!response.ok) throw new Error(body.error ?? 'Could not save this URL.');
-      setUrl(body.targetUrl ?? url); setFeedback({ kind: 'success', text: 'Public audit URL saved.' }); router.refresh();
-    } catch (error) { setFeedback({ kind: 'error', text: error instanceof Error ? error.message : 'Could not save this URL.' }); }
-    finally { setSaving(false); }
-  }
 
   async function runAudit() {
     setAuditing(true); setFeedback(null);
     try {
       const response = await fetch(`/api/sites/${agentId}/performance-audit`, { method: 'POST' });
       const body = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(body.error ?? 'PageSpeed could not complete this audit.');
+      if (!response.ok) throw new Error(body.error ?? 'Lighthouse could not complete this audit.');
       setFeedback({ kind: 'success', text: 'Mobile and desktop audits are ready.' }); router.refresh();
-    } catch (error) { setFeedback({ kind: 'error', text: error instanceof Error ? error.message : 'PageSpeed could not complete this audit.' }); }
+    } catch (error) { setFeedback({ kind: 'error', text: error instanceof Error ? error.message : 'Lighthouse could not complete this audit.' }); }
     finally { setAuditing(false); }
   }
 
   return <section className="performance-panel" aria-labelledby="performance-heading">
-    <div className="section-heading"><div><p className="eyebrow">MANUAL AUDIT</p><h2 id="performance-heading">Site performance</h2><p className="performance-copy">Run PageSpeed from this local workspace. It never changes the WordPress site.</p></div>{targetUrl ? <button className="primary-button" type="button" onClick={runAudit} disabled={auditing}>{auditing ? 'Running audit…' : <>Run audit <Icon name="activity" size={16} /></>}</button> : null}</div>
-    <form className="performance-form" onSubmit={saveTarget}><label htmlFor={`performance-url-${agentId}`}>Public URL to audit</label><div><input id={`performance-url-${agentId}`} type="url" required value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" /><button className="secondary-button" type="submit" disabled={saving}>{saving ? 'Saving…' : targetUrl ? 'Update URL' : 'Save URL'}</button></div><p>Use the public production URL. It can be different from this site&apos;s local inventory URL.</p></form>
-    <div className="audit-feedback" role="status" aria-live="polite">{feedback ? <span className={feedback.kind}>{feedback.text}</span> : targetUrl ? <>Audits run only when you press <strong>Run audit</strong>.</> : 'Save a public URL to enable the audit.'}</div>
-    {audits.length ? <div className="performance-audits">{[...audits].sort((a, b) => a.strategy.localeCompare(b.strategy)).map((audit) => <AuditCard key={audit.strategy} audit={audit} />)}</div> : targetUrl ? <p className="audit-empty">No audit saved yet. Run the first manual audit when you are ready.</p> : null}
+    <div className="section-heading"><div><p className="eyebrow">LOCAL LIGHTHOUSE</p><h2 id="performance-heading">Site performance</h2><p className="performance-copy">Audit this connected local site with the same Lighthouse engine used by Chrome. It never changes WordPress.</p></div><button className="primary-button" type="button" onClick={runAudit} disabled={auditing}>{auditing ? 'Running audit…' : <>Run audit <Icon name="activity" size={16} /></>}</button></div>
+    <div className="audit-target"><span>Local target</span><strong>{siteUrl.replace(/^https?:\/\//, '')}</strong></div>
+    <div className="audit-feedback" role="status" aria-live="polite">{feedback ? <span className={feedback.kind}>{feedback.text}</span> : <>Audits run only when you press <strong>Run audit</strong>. Mobile and desktop results are stored locally.</>}</div>
+    {audits.length ? <div className="performance-audits">{[...audits].sort((a, b) => a.strategy.localeCompare(b.strategy)).map((audit) => <AuditCard key={audit.strategy} audit={audit} />)}</div> : <p className="audit-empty">No audit saved yet. Run the first local audit when you are ready.</p>}
   </section>;
 }

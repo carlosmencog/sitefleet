@@ -50,7 +50,9 @@ services:
       REDIS_URL: redis://redis:6379
     command: node apps/api/dist/src/worker.js
   dashboard:
-    build: .
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,7 +60,9 @@ services:
       DATABASE_URL: postgres://sitefleet:${POSTGRES_PASSWORD}@postgres:5432/sitefleet
       DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:?set a dashboard username in .env}
       DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:?set a dashboard password in .env}
-      PAGESPEED_API_KEY: ${PAGESPEED_API_KEY:-}
+      LOCAL_LIGHTHOUSE_RESOLVER_RULES: ${LOCAL_LIGHTHOUSE_RESOLVER_RULES:-MAP *.local host.docker.internal}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "3000:3000"
     command: npm run start --workspace=@sitefleet/dashboard

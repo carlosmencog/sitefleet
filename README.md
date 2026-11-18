@@ -66,4 +66,4 @@ Consulta [la guía de onboarding productivo](docs/production-onboarding.md) ante
 
 ## Auditorías locales de rendimiento
 
-El dashboard puede consultar Google PageSpeed Insights manualmente para una URL pública, aunque SiteFleet se ejecute solo en tu equipo. Consulta [la guía de auditorías manuales](docs/manual-pagespeed-audits.md).
+El dashboard ejecuta Lighthouse manualmente contra cada sitio WordPress conectado en `*.local`, con resultados Mobile y Desktop para Performance, Accessibility, Best Practices, SEO y métricas de laboratorio. No requiere exponer los sitios ni usar una API externa. Consulta [la guía de auditorías locales](docs/manual-lighthouse-audits.md).

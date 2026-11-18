@@ -13,7 +13,6 @@ function getPool() {
 export type InventoryPayload = { wordpressVersion: string; phpVersion: string; plugins: Array<{ slug: string; version: string; updateAvailable: boolean }> };
 export type FleetSite = { agent_id: string; site_url: string; last_inventory_at: Date | null; inventory: InventoryPayload | null; alert_count: number; critical_count: number; update_count: number };
 export type FleetAlert = { agent_id: string; site_url: string; type: string; severity: 'warning' | 'critical'; details: Record<string, string>; last_seen_at: Date };
-export type PerformanceTarget = { target_url: string; updated_at: Date };
 export type PerformanceAudit = { strategy: 'mobile' | 'desktop'; target_url: string; scores: { performance: number | null; accessibility: number | null; bestPractices: number | null; seo: number | null }; metrics: { lcpMs: number | null; cls: number | null; inpMs: number | null; fcpMs: number | null; tbtMs: number | null }; opportunities: Array<{ id: string; title: string; displayValue: string | null; savingsMs: number | null }>; fetched_at: Date };
 
 export async function getFleet() {
@@ -36,10 +35,7 @@ export async function getSiteDetail(agentId: string) {
 
 export async function getPerformanceData(agentId: string) {
   const pool = getPool();
-  const [target, audits] = await Promise.all([
-    pool.query<PerformanceTarget>('SELECT target_url, updated_at FROM site_performance_targets WHERE agent_id = $1', [agentId]),
-    pool.query<PerformanceAudit>(`SELECT DISTINCT ON (strategy) strategy, target_url, scores, metrics, opportunities, fetched_at
-      FROM performance_audits WHERE agent_id = $1 ORDER BY strategy, fetched_at DESC`, [agentId]),
-  ]);
-  return { target: target.rows[0] ?? null, audits: audits.rows };
+  const audits = await pool.query<PerformanceAudit>(`SELECT DISTINCT ON (strategy) strategy, target_url, scores, metrics, opportunities, fetched_at
+      FROM performance_audits WHERE agent_id = $1 ORDER BY strategy, fetched_at DESC`, [agentId]);
+  return { audits: audits.rows };
 }
