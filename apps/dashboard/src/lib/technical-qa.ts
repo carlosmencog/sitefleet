@@ -28,14 +28,17 @@ const localLookup: LookupFunction = (hostname, options, callback) => {
   return lookupOptions ? lookup(resolvedHost, lookupOptions, done) : lookup(resolvedHost, done);
 };
 
-async function fetchPage(rawUrl: string): Promise<{ status: number; text: string; contentType: string }> {
+async function fetchPage(rawUrl: string, readBody = true): Promise<{ status: number; text: string; contentType: string }> {
   const url = new URL(rawUrl);
   const client = url.protocol === 'https:' ? httpsRequest : httpRequest;
   return new Promise((resolve, reject) => {
     const request = client(url, { headers: { 'user-agent': 'SiteFleet Technical QA/1.0', accept: 'text/html,*/*;q=0.8' }, lookup: localLookup, timeout: 12_000 }, (response) => {
-      const chunks: Buffer[] = []; let size = 0;
-      response.on('data', (chunk: Buffer) => { size += chunk.length; if (size <= 1_500_000) chunks.push(chunk); else response.destroy(); });
-      response.on('end', () => resolve({ status: response.statusCode ?? 0, text: Buffer.concat(chunks).toString('utf8'), contentType: String(response.headers['content-type'] ?? '') }));
+      const result = { status: response.statusCode ?? 0, text: '', contentType: String(response.headers['content-type'] ?? '') };
+      if (!readBody) { response.resume(); resolve(result); return; }
+      const chunks: Buffer[] = []; let size = 0; let settled = false;
+      const finish = () => { if (!settled) { settled = true; resolve({ ...result, text: Buffer.concat(chunks).toString('utf8') }); } };
+      response.on('data', (chunk: Buffer) => { size += chunk.length; if (size <= 1_500_000) chunks.push(chunk); else { response.destroy(); finish(); } });
+      response.once('end', finish); response.once('close', finish); response.once('error', (error) => { if (!settled) { settled = true; reject(error); } });
     });
     request.once('timeout', () => request.destroy(new Error('Request timed out.')));
     request.once('error', reject); request.end();
@@ -73,7 +76,7 @@ export async function runTechnicalQa(targetUrl: string): Promise<TechnicalQaResu
     }
   }
   for (const resourceUrl of [...resourceTargets].slice(0, maxResources)) {
-    try { const response = await fetchPage(resourceUrl); if (response.status >= 400) add({ type: 'missing_resource', severity: 'critical', pageUrl: targetUrl, targetUrl: resourceUrl, message: `Resource returned HTTP ${response.status}.` }); }
+    try { const response = await fetchPage(resourceUrl, false); if (response.status >= 400) add({ type: 'missing_resource', severity: 'critical', pageUrl: targetUrl, targetUrl: resourceUrl, message: `Resource returned HTTP ${response.status}.` }); }
     catch { add({ type: 'missing_resource', severity: 'critical', pageUrl: targetUrl, targetUrl: resourceUrl, message: 'Resource could not be reached.' }); }
   }
   const summary = { pagesChecked: visited.size, linksChecked: Math.max(0, visited.size - 1), resourcesChecked: Math.min(resourceTargets.size, maxResources), criticalCount: findings.filter((f) => f.severity === 'critical').length, warningCount: findings.filter((f) => f.severity === 'warning').length };
