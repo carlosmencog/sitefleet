@@ -58,6 +58,7 @@ services:
       DATABASE_URL: postgres://sitefleet:${POSTGRES_PASSWORD}@postgres:5432/sitefleet
       DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:?set a dashboard username in .env}
       DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:?set a dashboard password in .env}
+      PAGESPEED_API_KEY: ${PAGESPEED_API_KEY:-}
     ports:
       - "3000:3000"
     command: npm run start --workspace=@sitefleet/dashboard

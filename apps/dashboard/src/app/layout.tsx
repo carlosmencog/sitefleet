@@ -4,6 +4,7 @@ import './styles.css';
 import './views.css';
 import './brand.css';
 import './typography.css';
+import './performance.css';
 
 const dmSans = DM_Sans({
   subsets: ['latin'],

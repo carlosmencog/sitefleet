@@ -63,3 +63,7 @@ La API verifica primero el cuerpo recibido y, para interoperar con serializadore
 ## Producción
 
 Consulta [la guía de onboarding productivo](docs/production-onboarding.md) antes de conectar un sitio público. El agente 0.3.0 exige HTTPS fuera de los entornos WordPress `local` y `development`.
+
+## Auditorías locales de rendimiento
+
+El dashboard puede consultar Google PageSpeed Insights manualmente para una URL pública, aunque SiteFleet se ejecute solo en tu equipo. Consulta [la guía de auditorías manuales](docs/manual-pagespeed-audits.md).

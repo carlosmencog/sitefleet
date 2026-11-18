@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
-import { getSiteDetail } from '../../../lib/data';
+import { getPerformanceData, getSiteDetail } from '../../../lib/data';
 import { Icon } from '../../components/ui-icon';
 import { Sidebar } from '../../components/sidebar';
+import { PerformancePanel } from '../../components/performance-panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,7 @@ function alertTitle(type: string) {
 export default async function SiteDetailPage({ params }: { params: Promise<{ agentId: string }> }) {
   noStore();
   const { agentId } = await params;
-  const { site, alerts } = await getSiteDetail(agentId);
+  const [{ site, alerts }, performance] = await Promise.all([getSiteDetail(agentId), getPerformanceData(agentId)]);
   if (!site) notFound();
   const pendingPlugins = site.inventory?.plugins.filter((plugin) => plugin.updateAvailable) ?? [];
   const status = site.critical_count ? 'Critical' : site.alert_count ? 'Needs review' : 'Healthy';
@@ -35,6 +36,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ age
       <section className="detail-grid" aria-label="Current site status"><article className="detail-card"><span className="detail-icon"><Icon name="wordpress" /></span><span>WordPress</span><strong>{site.inventory?.wordpressVersion ?? '—'}</strong></article><article className="detail-card"><span className="detail-icon"><Icon name="layers" /></span><span>PHP</span><strong>{site.inventory?.phpVersion ?? '—'}</strong></article><article className="detail-card"><span className="detail-icon"><Icon name="alert" /></span><span>Open findings</span><strong>{site.alert_count}</strong></article><article className="detail-card"><span className="detail-icon"><Icon name="activity" /></span><span>Plugin updates</span><strong className={pendingPlugins.length ? 'warning-text' : ''}>{pendingPlugins.length || 'None'}</strong></article></section>
 
       <section className="detail-panel" aria-labelledby="plugins-heading"><div className="section-heading"><div><p className="eyebrow">PLUGINS</p><h2 id="plugins-heading">Pending updates</h2></div><span className="subtle">Reported by this site</span></div>{pendingPlugins.length ? <div className="data-list">{pendingPlugins.map((plugin) => <div className="data-row" key={plugin.slug}><div><strong>{plugin.slug}</strong><span>Installed version {plugin.version}</span></div><span className="health-badge warning">Update available</span></div>)}</div> : <p className="empty">All installed plugins are up to date.</p>}</section>
+      <PerformancePanel agentId={agentId} targetUrl={performance.target?.target_url ?? null} audits={performance.audits.map((audit) => ({ strategy: audit.strategy, scores: audit.scores, metrics: audit.metrics, opportunities: audit.opportunities, fetchedAt: audit.fetched_at.toISOString() }))} />
       <section className="detail-panel" aria-labelledby="alerts-heading"><div className="section-heading"><div><p className="eyebrow">ATTENTION</p><h2 id="alerts-heading">Open findings</h2></div></div>{alerts.length ? <div className="data-list">{alerts.map((alert, index) => <div className="data-row" key={`${alert.type}-${index}`}><div><strong>{alertTitle(alert.type)}</strong><span>{Object.entries(alert.details).map(([key, value]) => `${key}: ${value}`).join(' · ')} · Last seen {formatDate(alert.last_seen_at)}</span></div><span className={`health-badge ${alert.severity}`}>{alert.severity}</span></div>)}</div> : <p className="empty">No open findings for this site.</p>}</section>
     </div>
   </main>;
