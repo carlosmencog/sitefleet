@@ -4,9 +4,9 @@
 
 SiteFleet gives an agency one operational view of its WordPress installations: each site sends a signed inventory, the dashboard turns that inventory into actionable findings, and an operator can run focused performance and technical QA checks without exposing local development sites to the public internet.
 
-![SiteFleet overview](docs/screenshots/overview.png)
+![SiteFleet overview](https://raw.githubusercontent.com/carlosmencog/sitefleet/2d213e7a929cd1b0938491d00d71990c6e5bb6d6/docs/screenshots/overview.png)
 
-![SiteFleet templates.local detail](docs/screenshots/templates-local.png)
+![SiteFleet templates.local detail](https://raw.githubusercontent.com/carlosmencog/sitefleet/2d213e7a929cd1b0938491d00d71990c6e5bb6d6/docs/screenshots/templates-local.png)
 
 ## What it does
 
