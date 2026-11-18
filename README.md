@@ -6,7 +6,7 @@ SiteFleet gives an agency one operational view of its WordPress installations: e
 
 ![SiteFleet overview](docs/screenshots/overview.png)
 
-![SiteFleet site directory](docs/screenshots/site-directory.png)
+![SiteFleet templates.local detail](docs/screenshots/templates-local.png)
 
 ## What it does
 
