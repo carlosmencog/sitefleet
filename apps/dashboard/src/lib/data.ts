@@ -14,6 +14,7 @@ export type InventoryPayload = { wordpressVersion: string; phpVersion: string; p
 export type FleetSite = { agent_id: string; site_url: string; last_inventory_at: Date | null; inventory: InventoryPayload | null; alert_count: number; critical_count: number; update_count: number };
 export type FleetAlert = { agent_id: string; site_url: string; type: string; severity: 'warning' | 'critical'; details: Record<string, string>; last_seen_at: Date };
 export type PerformanceAudit = { strategy: 'mobile' | 'desktop'; target_url: string; scores: { performance: number | null; accessibility: number | null; bestPractices: number | null; seo: number | null }; metrics: { lcpMs: number | null; cls: number | null; inpMs: number | null; fcpMs: number | null; tbtMs: number | null }; opportunities: Array<{ id: string; title: string; displayValue: string | null; savingsMs: number | null }>; fetched_at: Date };
+export type TechnicalQaAudit = { summary: { pagesChecked: number; linksChecked: number; resourcesChecked: number; criticalCount: number; warningCount: number }; findings: Array<{ type: string; severity: 'warning' | 'critical'; pageUrl: string; targetUrl?: string; message: string }>; fetched_at: Date };
 
 export async function getFleet() {
   const pool = getPool();
@@ -38,4 +39,10 @@ export async function getPerformanceData(agentId: string) {
   const audits = await pool.query<PerformanceAudit>(`SELECT DISTINCT ON (strategy) strategy, target_url, scores, metrics, opportunities, fetched_at
       FROM performance_audits WHERE agent_id = $1 ORDER BY strategy, fetched_at DESC`, [agentId]);
   return { audits: audits.rows };
+}
+
+export async function getTechnicalQaData(agentId: string) {
+  const pool = getPool();
+  const audit = await pool.query<TechnicalQaAudit>('SELECT summary, findings, fetched_at FROM technical_qa_audits WHERE agent_id = $1 ORDER BY fetched_at DESC LIMIT 1', [agentId]);
+  return audit.rows[0] ?? null;
 }

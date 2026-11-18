@@ -67,3 +67,7 @@ Consulta [la guía de onboarding productivo](docs/production-onboarding.md) ante
 ## Auditorías locales de rendimiento
 
 El dashboard ejecuta Lighthouse manualmente contra cada sitio WordPress conectado en `*.local`, con resultados Mobile y Desktop para Performance, Accessibility, Best Practices, SEO y métricas de laboratorio. No requiere exponer los sitios ni usar una API externa. Consulta [la guía de auditorías locales](docs/manual-lighthouse-audits.md).
+
+## Technical QA
+
+Cada detalle de sitio incorpora un crawler manual de QA técnico para encontrar enlaces internos rotos, recursos que no cargan, imágenes sin `alt`, y problemas básicos de estructura SEO. Consulta el [alcance de Technical QA](docs/technical-qa.md).

@@ -1,0 +1,20 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Icon } from './ui-icon';
+
+type Finding = { type: string; severity: 'warning' | 'critical'; pageUrl: string; targetUrl?: string; message: string };
+type Audit = { summary: { pagesChecked: number; linksChecked: number; resourcesChecked: number; criticalCount: number; warningCount: number }; findings: Finding[]; fetchedAt: string } | null;
+const labels: Record<string, string> = { broken_link: 'Broken link', missing_resource: 'Missing resource', missing_alt: 'Missing alt text', missing_title: 'Missing title', missing_meta_description: 'Missing meta description', missing_h1: 'Missing H1', multiple_h1: 'Multiple H1s' };
+function formatDate(value: string) { return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); }
+
+export function TechnicalQaPanel({ agentId, audit }: { agentId: string; audit: Audit }) {
+  const router = useRouter(); const [running, setRunning] = useState(false); const [feedback, setFeedback] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
+  async function runQa() { setRunning(true); setFeedback(null); try { const response = await fetch(`/api/sites/${agentId}/technical-qa`, { method: 'POST' }); const body = await response.json() as { error?: string; summary?: { criticalCount: number; warningCount: number } }; if (!response.ok) throw new Error(body.error ?? 'Technical QA could not complete.'); const total = (body.summary?.criticalCount ?? 0) + (body.summary?.warningCount ?? 0); setFeedback({ kind: 'success', text: total ? `QA found ${total} technical finding${total === 1 ? '' : 's'}.` : 'QA passed with no technical findings.' }); router.refresh(); } catch (error) { setFeedback({ kind: 'error', text: error instanceof Error ? error.message : 'Technical QA could not complete.' }); } finally { setRunning(false); } }
+  return <section className="technical-qa-panel" aria-labelledby="technical-qa-heading">
+    <div className="section-heading"><div><p className="eyebrow">TECHNICAL QA</p><h2 id="technical-qa-heading">Crawl-based quality checks</h2><p className="performance-copy">Checks objective site signals: broken internal links, missing resources, image alt attributes, page titles, descriptions, and H1 structure.</p></div><button className="primary-button" type="button" onClick={runQa} disabled={running}>{running ? 'Checking site…' : <>Run technical QA <Icon name="shield" size={16} /></>}</button></div>
+    <div className="audit-feedback" role="status" aria-live="polite" aria-busy={running}>{feedback ? <span className={feedback.kind}>{feedback.text}</span> : 'This crawler checks technical signals only. It does not judge visual design.'}</div>
+    {audit ? <><div className="qa-summary"><div><span>Pages checked</span><strong>{audit.summary.pagesChecked}</strong></div><div><span>Resources checked</span><strong>{audit.summary.resourcesChecked}</strong></div><div><span>Critical</span><strong className={audit.summary.criticalCount ? 'critical' : 'good'}>{audit.summary.criticalCount}</strong></div><div><span>Warnings</span><strong className={audit.summary.warningCount ? 'warning' : 'good'}>{audit.summary.warningCount}</strong></div></div><p className="qa-timestamp">Checked {formatDate(audit.fetchedAt)}</p>{audit.findings.length ? <div className="qa-findings">{audit.findings.map((finding, index) => <article className="qa-finding" key={`${finding.type}-${finding.pageUrl}-${index}`}><span className={`qa-icon ${finding.severity}`}><Icon name={finding.severity === 'critical' ? 'alert' : 'shield'} size={16} /></span><div><strong>{labels[finding.type] ?? finding.type}</strong><p>{finding.message}</p><small>{finding.targetUrl ?? finding.pageUrl}</small></div><span className={`health-badge ${finding.severity}`}>{finding.severity}</span></article>)}</div> : <p className="qa-empty">No objective technical issues found in the checked pages.</p>}</> : <p className="qa-empty">No Technical QA run saved yet. Run the first crawl when you are ready.</p>}
+  </section>;
+}
